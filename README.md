@@ -1,7 +1,7 @@
 # M2_Internship_clusters_cross_X_optical
 "Cosmology with galaxy Clusters in Optical and X-rays"
 
-M2 internhip of Emile Dosso under the supervision of Mr. Reza Ansari at the CEA/DER/IRFU/LCEG. 
+M2 internhip of Emile Dosso under the supervision of Mr. Reza Ansari at the CEA/DRF/IRFU/LCEG. 
 
 Subject :
 "
