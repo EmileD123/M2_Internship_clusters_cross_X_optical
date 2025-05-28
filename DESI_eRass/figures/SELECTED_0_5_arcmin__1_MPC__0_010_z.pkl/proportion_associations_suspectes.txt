@@ -1,1 +1,1 @@
-Proportion d'associations suspectes en termes de différences de masse par rapport au nombre total d'associations : 60.902 %
+Proportion d'associations suspectes en termes de différences de masse par rapport au nombre total d'associations : 60.944 %
