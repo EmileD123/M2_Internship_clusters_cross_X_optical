@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 # On commence par la fonction de masse des halos de matière noire (HMF) de Murray, Robotham et Power (MRP) - Murray, Robotham, Power 2013 / Murray et al. 2021
 
+
 def HMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
     # Halo Mass Function (HMF) de Murray, Robotham et Power (MRP)
 
@@ -40,6 +41,8 @@ def CMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
         return result
     
     return CMF_MRP_result
+
+
 
 
 def CMF_MRP_2(log10_M_Msun): 
