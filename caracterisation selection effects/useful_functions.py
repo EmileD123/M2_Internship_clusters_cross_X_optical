@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 from scipy.integrate import quad
+from scipy.optimize import fsolve
 import math
 import matplotlib.pyplot as plt
 from astropy.cosmology import Planck18
@@ -23,13 +24,27 @@ def CMF_to_mean_density(CMF,bornes_log10_M_Msun):
 # Calcule le volume (en MPC^3) couvert par un relevé à l'aide de sa surface angulaire et de l'intervalle de redshift
 def Volume_survey(Angular_surface_deg2,bornes_z):
     # Angular_surface_deg2 : surface angulaire du relevé en degrés carrés
-    # bornes_z : tuple contenant les bornes inférieure et supérieure de l'intervalle de redshift
+    # bornes_z : [a,b] → tuple contenant les bornes inférieure et supérieure de l'intervalle de redshift
 
     Angular_surface_sr = Angular_surface_deg2 * (np.pi / 180)**2  # Conversion de degrés carrés en stéradians
     D1 = cosmo.comoving_distance(bornes_z[0]).value ; D2 = cosmo.comoving_distance(bornes_z[1]).value  # On prend la distance comobile pout le calcul du volume, ce qui permet d'ignorer l'expansion de l'univers,
     #c'est ce qui est utlisée pour le calcul des HMF (voir par exemple Kosiba et al. 2024, section 2.1)
     volume = (D2**3 - D1**3) * Angular_surface_sr / 3  # Volume d'un cône tronqué en MPC^3
     return volume
+
+# Idem mais fonctionne pour de multiples bornes de z (typiquement dans le cas où on à un zmax pour chaque bin de luminosité)
+def Volume_survey_array(Angular_surface_deg2,bornes_z):
+    # Angular_surface_deg2 : surface angulaire du relevé en degrés carrés
+    # bornes_z : [a,[b]] tuple contenant les bornes inférieure et supérieure de l'intervalle de redshift ; [b] de taille > 1
+    volume = []
+    Angular_surface_sr = Angular_surface_deg2 * (np.pi / 180)**2  # Conversion de degrés carrés en stéradians
+    D1 = cosmo.comoving_distance(bornes_z[0]).value 
+    for zmax in bornes_z[1]:
+        D2 = cosmo.comoving_distance(zmax).value 
+        current_volume = (D2**3 - D1**3) * Angular_surface_sr / 3
+        volume.append(current_volume)
+    return volume
+
 
 # Transforme certaines extensions d'un fichier FITS en un fichier FITS ASCII
 def fits_binary_to_fits_ascii_list(fits_file, liste_indexes, name_list):  # liste_indexes indique les extensions du fits à lire ; name_list correspond aux noms des fichiers de sortie
@@ -101,3 +116,16 @@ def RL_to_log10_M_Msun(richness):
 
     return [log10_M_Msun,log10_M_Msun_min,log10_M_Msun_max]
 
+def inverse_luminosity_distance(Dl):
+    # Dl est en pc
+    # Compute the inverse of the luminosity distance function to find z for a given Dl.
+    Dl = np.array(Dl)
+    size_array = np.size(Dl)  
+    def func(z):
+        return (cosmo.luminosity_distance(z).value * 1e6) - Dl # en pc
+    
+    # Use fsolve to find the root of the function
+    z_initial_guess = np.ones(size_array) * 0.5  # Initial guess for the redshift
+    z_solution = fsolve(func, z_initial_guess)
+    return z_solution  # Return the first element of the solution array, which is the redshift z we search for
+   
