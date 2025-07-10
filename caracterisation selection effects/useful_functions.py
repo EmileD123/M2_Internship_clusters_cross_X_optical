@@ -120,7 +120,7 @@ def inverse_luminosity_distance(Dl):
     # Dl est en pc
     # Compute the inverse of the luminosity distance function to find z for a given Dl.
     Dl = np.array(Dl)
-    size_array = np.size(Dl)  
+    size_array = np.size(Dl)
     def func(z):
         return (cosmo.luminosity_distance(z).value * 1e6) - Dl # en pc
     
