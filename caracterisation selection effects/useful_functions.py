@@ -116,6 +116,11 @@ def RL_to_log10_M_Msun(richness):
 
     return [log10_M_Msun,log10_M_Msun_min,log10_M_Msun_max]
 
+'''def inverse_luminosity_distance([start,stop,step]):
+    z = np.linspace(stat,stop,step)
+    DL = cosmo.luminosity_distance(range_z).value * 1e6'''
+
+
 def inverse_luminosity_distance(Dl):
     # Dl est en pc
     # Compute the inverse of the luminosity distance function to find z for a given Dl.
@@ -128,4 +133,24 @@ def inverse_luminosity_distance(Dl):
     z_initial_guess = np.ones(size_array) * 0.5  # Initial guess for the redshift
     z_solution = fsolve(func, z_initial_guess)
     return z_solution  # Return the first element of the solution array, which is the redshift z we search for
-   
+
+
+
+
+
+
+def L_star_L_sun_for_SCUSS(table):
+    # Ajoute une colonne log10(L/L_sun) à la table issu de Gao et al. 2020 → uniquement celle là car ils ont un calcul de L* spécifique venant de Blanton et al. 2003
+    # 2 limitations importantes pour cette relation : 1) La formule est ajustée empiriquement dans la plage de redshift : 0.02<z<0.22
+    #                                                 2) L'ensemble des galaxies est supposée évolué identiquement
+
+    Lstar_z_0 = 1.08 * 1e10 # unité : L_sun
+    Q = 1.16
+
+    log10_L1mpc = np.log10(table['L1Mpc']) # log10(L/L*)
+    z = np.array(table['z'])
+
+    L_star = Lstar_z_0 * 10**(0.4 * Q * z) # unité : L_sun
+    result = log10_L1mpc - np.log10(1/L_star)
+
+    return result

@@ -80,7 +80,8 @@ def CMF_MRP_2_opposite(log10_M_Msun):
 
 
 def CRF_MRP(params):  #params est un tableau de 4 paramètres : log10_Mmedian_Msun, log10_phimedian, alpha, beta
-    # CRF pour "Cluster Richness Fonction" - Fonction de richesse des amas de galaxies tirée de la CMF MRP
+    # CRF pour "Cluster Richness Fonction" - Fonction de richesse des amas de galaxies tirée de la CMF MRP 
+    # → ATTENTION : la relation M500 - Richesse est tirée de Wen et Han. 2015 (utiliseé dans Gao et al. 2020)
     def CRF_MRP_result(RL):
         log10_M_Msun = (1.08 * np.log10(np.array(RL)) - 1.37)  # relation (17) de Wen et Han. 2015 : en réalité la formule est  (1.08 +/- 0.02) * np.log10(RL) - (1.37 +/- 0.02) → essayer de prendre en compte cette dispersion pour la suite 
         log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
@@ -163,3 +164,37 @@ def CLF_log10_MRP(params,z): #params est un tableau de 4 paramètres : log10_Mme
 
         return [result,result_min,result_max]  
     return CLF_log10_MRP_result
+
+
+def CLsunF_log10_MRP(params,z): 
+    # Il s'agit de la 'Cluster Luminosity Function' pour une unité de luminosité en Lsun
+    # params est un tableau de 4 paramètres : log10_Mmedian_Msun, log10_phimedian, alpha, beta ; z est le redshift
+    # On mène les calculs à z fixés !
+    def CLsunF_log10_MRP_result(log10_Lsun_L1Mpc):
+        #Retourne un tableau de forme  len(z) * len(log10_Lsun_L1Mpc) : chaque ligne correspond à un redshift et chaque colonne à une luminosité
+
+        log10_Lsun_L1Mpc = np.array(log10_Lsun_L1Mpc)[np.newaxis,:] # Reshape L1Mpc to a row vector : log10(L1Mpc/Lsun)
+        z_ = np.array(z)[:,np.newaxis]  # Reshape z to a column vector
+
+        log10_L1Mpc = log10_Lsun_L1Mpc - np.log10((1.08 * 10**10)*10**(0.4*1.16*z_)) # ← log10_L1Mpc = log10(L/L*) ; avec L*(z=0) = 1.08 * 10**10 * Lsun
+        # ATTENION ! La correction écrase tout pour des z trop grands
+
+        log10_M_Msun = 1.08 * (np.log10(0.69) + 1.32 * log10_L1Mpc + 2.91 * np.log10(1+z_)) - 1.37 
+        # On injecte la relation (3) de Gao et al. 2019 dans la relation (17) de Wen et Han. 2015 : en réalité la formule est  (1.08 +/- 0.02) * np.log10(RL) - (1.37 +/- 0.02) → essayer de prendre en compte cette dispersion pour la suite 
+        log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
+        M_Msun = 10**(log10_M_Msun)
+
+        log10_Mmedian_Msun = params[0]; log10_phimedian = params[1] ; alpha = params[2] ; beta = params[3]
+        log10_Mmedian_Msun = np.array(log10_Mmedian_Msun)  ; Mmedian_Msun = 10**(log10_Mmedian_Msun)
+        log10_phimedian = np.array(log10_phimedian) ; phimedian = 10**(log10_phimedian)
+        alpha = np.array(alpha)
+        beta = np.array(beta)
+
+        CMF = np.log(10) * phimedian * beta * ((M_Msun * (Mmedian_Msun)**(-1))**(alpha+1)) * np.exp(-((M_Msun * (Mmedian_Msun)**(-1))**(beta))) * (1/0.85) # * 1/0.85 car on considère que la DM représente 85% de la masse d'un cluster
+        coeff_multipli_list = [1.08,1.08-0.02,1.08+0.02] # plusieurs coefficients pour prendre en compte la dispersion de la relation Richesse - M500 (voir Wen et Han 2015)
+        result = CMF * coeff_multipli_list[0] * (1.32*log10_L1Mpc) # calcul de dn/dL
+        result_min = CMF * coeff_multipli_list[1] * (1.32*log10_L1Mpc) # calcul de dn/dL
+        result_max = CMF * coeff_multipli_list[2] * (1.32*log10_L1Mpc) # calcul de dn/dL
+
+        return [result,result_min,result_max]  
+    return CLsunF_log10_MRP_result
