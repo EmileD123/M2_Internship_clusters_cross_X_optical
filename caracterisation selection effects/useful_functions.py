@@ -116,12 +116,25 @@ def RL_to_log10_M_Msun(richness):
 
     return [log10_M_Msun,log10_M_Msun_min,log10_M_Msun_max]
 
-'''def inverse_luminosity_distance([start,stop,step]):
-    z = np.linspace(stat,stop,step)
-    DL = cosmo.luminosity_distance(range_z).value * 1e6'''
+def inverse_luminosity_distance(z_array):
+    # z_array : [start,stop,num]
+    # Return a function that approximates the inverse of DL(z) on the range defined by z_array
+    start = z_array[0] ; stop = z_array[1] ; num = z_array[2] 
+    range_z = np.linspace(start, stop, num)
+    DL = cosmo.luminosity_distance(range_z).value * 1e6
+    # Now, return a function that approximates the inverse of DL(z)
+    # We'll use interpolation to create an approximate inverse function
+    from scipy.interpolate import interp1d
+    # DL is strictly increasing with z, so we can invert it
+    DL_sorted = np.array(DL)
+    z_sorted = np.array(range_z)
+    # Create the inverse function: given DL, return z
+    inverse_func = interp1d(DL_sorted, z_sorted, kind = 'linear', bounds_error=False)
+    return inverse_func
 
 
-def inverse_luminosity_distance(Dl):
+def inverse_luminosity_distance_old(Dl):
+    # Deprecated
     # Dl est en pc
     # Compute the inverse of the luminosity distance function to find z for a given Dl.
     Dl = np.array(Dl)
@@ -133,8 +146,6 @@ def inverse_luminosity_distance(Dl):
     z_initial_guess = np.ones(size_array) * 0.5  # Initial guess for the redshift
     z_solution = fsolve(func, z_initial_guess)
     return z_solution  # Return the first element of the solution array, which is the redshift z we search for
-
-
 
 
 
