@@ -165,3 +165,107 @@ def L_star_L_sun_for_SCUSS(table):
     result = log10_L1mpc - np.log10(1/L_star)
 
     return result
+
+#----------------------------------------------------------------------------------------------------------------    
+# Fonctions anciennement dans le notebook (faites par CURSOR)
+
+# Fonctions pour raccourcir le code
+def compute_histogram_density(data, bins=100, range=None, volume=1.0): #Attention : on ne ressort ici 
+    """
+    Compute histogram, bin centers, bin width, and density for a given data array.
+
+    Args:
+        data (array-like): Input data (e.g., log-mass, richness, luminosity).
+        bins (int): Number of bins.
+        range (tuple): Range for the histogram.
+        volume (float or array-like): Survey volume for normalization.
+
+    Returns:
+        bin_centers (np.ndarray): Centers of the bins.
+        counts (np.ndarray): Counts per bin.
+        bin_width (float): Width of each bin.
+        density (np.ndarray): Density per bin (counts/bin_width/volume).
+    """
+    counts, bin_edges = np.histogram(data, bins=bins, range=range)
+    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    bin_width = np.diff(bin_edges)[0]  # Assuming uniform bin width
+    density = (counts/bin_width)/volume
+    return bin_centers, counts, bin_width, density
+
+def compute_poisson_errors(counts, bin_width, normalize=False):
+    """
+    Compute Poisson errors for histogram bins, optionally normalized.
+
+    Args:
+        counts (np.ndarray): Counts per bin.
+        bin_width (float): Bin width.
+        normalize (bool): If true, normalize errors by (total * bin_width)
+
+    Returns:
+        errors (np.ndarray): Poisson errors (normalized if total is given).
+    """
+    errors = np.sqrt(counts)
+    if normalize:
+        total = np.sum(counts)
+        errors = errors / (total * bin_width)
+    return errors
+
+def process_subtables_histogram(subtables, column, bins, range, volume, label_prefix, color_map):
+    """
+    Compute and plot histograms/densities for a list of subtables (e.g., redshift bins).
+
+    Args:
+        subtables (list of DataFrame): List of subtables.
+        column (str): Column name to process.
+        bins (int): Number of bins.
+        range (tuple): Histogram range.
+        volume (array-like): Survey volume.
+        label_prefix (str): Prefix for legend labels.
+        color_map (callable): Function mapping index to color.
+    """
+    results = []
+    for i, subtable in enumerate(subtables):
+        data = subtable[column]
+        bin_centers, counts, bin_width, density = compute_histogram_density(
+            data, bins=bins, range=range, volume=volume[i]
+        )
+        norm_counts = counts / (np.sum(counts) * bin_width)
+        errors = compute_poisson_errors(counts, bin_width)
+        norm_errors = compute_poisson_errors(counts, bin_width, normalize=True)
+        
+        results.append({
+            'bin_centers': bin_centers,
+            'counts': counts,
+            'norm_counts': norm_counts,
+            'density': density,
+            'errors': errors,
+            'norm_errors': norm_errors,
+            'color': color_map(i / (len(subtables) - 1))
+        })
+    return results
+
+def add_apparent_luminosity(df, Labs_col, z_col, cosmo, new_col='Lapp'):
+    """
+    Add a column for apparent luminosity to a DataFrame.
+
+    Args:
+        df (pd.DataFrame): Input DataFrame.
+        Labs_col (str): Name of the absolute luminosity column.
+        z_col (str): Name of the redshift column.
+        cosmo (astropy.cosmology): Cosmology object for distance calculation.
+        new_col (str): Name for the new column.
+
+    Returns:
+        pd.DataFrame: DataFrame with new column added.
+    """
+    df = df.copy()
+    Lapp = []
+    for _, row in df.iterrows():
+        Labs = row[Labs_col]
+        z = row[z_col]
+        DL = (cosmo.luminosity_distance(z).value)*1e6  # Distance lumineuse en pc
+        Lapp.append(((10/DL)**2) * Labs)  # Conversion de L1Mpc à Lapp
+    df[new_col] = Lapp
+    return df
+
+    #---------------------------------------------------------------------------------------------------
