@@ -126,9 +126,9 @@ def CLF_MRP(params,z): #params est un tableau de 4 paramètres : log10_Mmedian_M
 
         CMF = np.log(10) * phimedian * beta * ((M_Msun * (Mmedian_Msun)**(-1))**(alpha+1)) * np.exp(-((M_Msun * (Mmedian_Msun)**(-1))**(beta))) * (1/0.85) # * 1/0.85 car on considère que la DM représente 85% de la masse d'un cluster
         coeff_multipli_list = [1.08,1.08-0.02,1.08+0.02] # plusieurs coefficients pour prendre en compte la dispersion de la relation Richesse - M500 (voir Wen et Han 2015)
-        result = CMF * coeff_multipli_list[0] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32+1))) # calcul de dn/dL
-        result_min = CMF * coeff_multipli_list[1] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32+1)))
-        result_max = CMF * coeff_multipli_list[2] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32+1)))
+        result = CMF * coeff_multipli_list[0] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32-1))) # calcul de dn/dL # AVANR c'étatit 1.32 +1 !!! → cette correction semble avoir amélioré la comparaison avec les données théorie/données
+        result_min = CMF * coeff_multipli_list[1] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32-1)))
+        result_max = CMF * coeff_multipli_list[2] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32-1)))
 
         return [result,result_min,result_max]  
     return CLF_MRP_result

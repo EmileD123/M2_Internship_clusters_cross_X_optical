@@ -82,8 +82,9 @@ def fits_to_dataframe_list(fits_file, liste_indexes):  # liste_indexes indique l
 
 
 
-
-# Relations importantes dans le papier Gao et al. 2019 (SCUSS/SDSS/unWISE)
+#----------------------------------------------------------------------------------------------------------------
+# IMPORTANT : Relations VALABLES dans le papier Gao et al. 2019 (SCUSS/SDSS/unWISE)
+# (générlisables aux autres relevés ?)
 
 def L1Mpc_to_log10_M_Msun(L1Mpc, z):
     # Relation entre la luminosité L1Mpc et la M500 des amas de galaxies, en passant par le calcul de la richesse
@@ -97,7 +98,7 @@ def L1Mpc_to_log10_M_Msun(L1Mpc, z):
     richness = 0.69 * (L1Mpc**1.32) * (1 + z)**2.91  # relation (3) de Gao et al. 2019
 
     log10_M_Msun = 1.08 * np.log10(richness) - 1.37  # relation (17) de Wen et al. 2015
-    log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
+    #log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
 
     return log10_M_Msun   # Returns an array of size len(z)*len(L1Mpc)
 
@@ -109,10 +110,11 @@ def RL_to_log10_M_Msun(richness):
 
     log10_M_Msun = 1.08 * np.log10(richness) - 1.37  # relation (17) de Wen et al. 2015 : en réalité la formule est  (1.08 +/- 0.02) * np.log10(richness) - (1.37 +/- 0.02) → essayer de prendre en compte cette dispersion pour la suite
     # M_Msun est pour l'instant en unité de 10^14 M_sun
-    log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
     
-    log10_M_Msun_min =  (1.08 - 0.02) * np.log10(richness) - (1.37+0.02) + 14
-    log10_M_Msun_max =  (1.08 + 0.02) * np.log10(richness) - (1.37-0.02) + 14
+    #log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
+    
+    log10_M_Msun_min =  (1.08 - 0.02) * np.log10(richness) - (1.37+0.02) #+ 14
+    log10_M_Msun_max =  (1.08 + 0.02) * np.log10(richness) - (1.37-0.02) #+ 14
 
     return [log10_M_Msun,log10_M_Msun_min,log10_M_Msun_max]
 
@@ -146,8 +148,6 @@ def inverse_luminosity_distance_old(Dl):
     z_initial_guess = np.ones(size_array) * 0.5  # Initial guess for the redshift
     z_solution = fsolve(func, z_initial_guess)
     return z_solution  # Return the first element of the solution array, which is the redshift z we search for
-
-
 
 
 def L_star_L_sun_for_SCUSS(table):
