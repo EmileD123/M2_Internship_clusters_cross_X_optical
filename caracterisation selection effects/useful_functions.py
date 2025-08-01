@@ -86,7 +86,7 @@ def fits_to_dataframe_list(fits_file, liste_indexes):  # liste_indexes indique l
 # IMPORTANT : Relations VALABLES dans le papier Gao et al. 2019 (SCUSS/SDSS/unWISE)
 # (générlisables aux autres relevés ?)
 
-def L1Mpc_to_log10_M_Msun(L1Mpc, z):
+def L1Mpc_to_log10_M_Msun(L1Mpc, z): 
     # Relation entre la luminosité L1Mpc et la M500 des amas de galaxies, en passant par le calcul de la richesse
     # L1Mpc : "is the total r-band luminosity of cluster members within a distance of 1 Mpc from the BCG" → luminosité absolue et non apparente
     # z : redshift
@@ -98,12 +98,46 @@ def L1Mpc_to_log10_M_Msun(L1Mpc, z):
     richness = 0.69 * (L1Mpc**1.32) * (1 + z)**2.91  # relation (3) de Gao et al. 2019
 
     log10_M_Msun = 1.08 * np.log10(richness) - 1.37  # relation (17) de Wen et al. 2015
-    #log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
+    log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
 
     return log10_M_Msun   # Returns an array of size len(z)*len(L1Mpc)
 
+def L1Mpc_to_log10_M_Msun_test(L1Mpc, z): # Dédié uniquement au test dans test_scaling_relations.py
+    # Relation entre la luminosité L1Mpc et la M500 des amas de galaxies, en passant par le calcul de la richesse
+    # L1Mpc : "is the total r-band luminosity of cluster members within a distance of 1 Mpc from the BCG" → luminosité absolue et non apparente
+    # z : redshift
+    # Retourne un tableau de forme  len(z) * len(L1Mpc) : chaque ligne correspond à un redshift et chaque colonne à une luminosité apparente 
+
+    L1Mpc = np.array(L1Mpc)
+    z = np.array(z)
+
+    # If L1Mpc and z are not the same length, raise an error
+    if L1Mpc.shape[0] != z.shape[0]:
+        raise ValueError("L1Mpc and z must have the same length to extract the diagonal.")
+
+    richness = 0.69 * (L1Mpc**1.32) * (1 + z)**2.91  # relation (3) de Gao et al. 2019
+
+    log10_M_Msun = 1.08 * np.log10(richness) - 1.37  # relation (17) de Wen et al. 2015
+    #log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
+
+    return log10_M_Msun   # Returns only the diagonal (element-wise) result
 
 def RL_to_log10_M_Msun(richness):
+    # !!! ATTENTION : La fonction renvoie 3 tableaux de masses (la moyenne  et les bornes inférieure et supérieure) pour prendre en compte la dispersion)
+    # Relation entre la richesse et la M500 des amas de galaxies
+    # Retourne la masse en log10(M/M_sun)
+
+    log10_M_Msun = 1.08 * np.log10(richness) - 1.37  # relation (17) de Wen et al. 2015 : en réalité la formule est  (1.08 +/- 0.02) * np.log10(richness) - (1.37 +/- 0.02) → essayer de prendre en compte cette dispersion pour la suite
+    # M_Msun est pour l'instant en unité de 10^14 M_sun
+    
+    log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
+    
+    log10_M_Msun_min =  (1.08 - 0.02) * np.log10(richness) - (1.37+0.02) + 14
+    log10_M_Msun_max =  (1.08 + 0.02) * np.log10(richness) - (1.37-0.02) + 14
+
+    return [log10_M_Msun,log10_M_Msun_min,log10_M_Msun_max]
+
+def RL_to_log10_M_Msun_test(richness): # Dédié uniquement au test dans test_scaling_relations.py (on ne convertit pas en M_sun en ajoutant 14)
     # !!! ATTENTION : La fonction renvoie 3 tableaux de masses (la moyenne  et les bornes inférieure et supérieure) pour prendre en compte la dispersion)
     # Relation entre la richesse et la M500 des amas de galaxies
     # Retourne la masse en log10(M/M_sun)
@@ -117,6 +151,8 @@ def RL_to_log10_M_Msun(richness):
     log10_M_Msun_max =  (1.08 + 0.02) * np.log10(richness) - (1.37-0.02) #+ 14
 
     return [log10_M_Msun,log10_M_Msun_min,log10_M_Msun_max]
+
+
 
 def inverse_luminosity_distance(z_array):
     # z_array : [start,stop,num]

@@ -20,6 +20,7 @@ def HMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
         # log10_M_Msun : log10(M/M_sun)
         log10_M_Msun = np.array(log10_M_Msun) # Assure que c'est un tableau numpy
         M_Msun = 10**(log10_M_Msun)
+        M_Msun = M_Msun * (1/0.435) # On passe de M500 à M200 (conversion approximative voir note Reza clus_nfw.pdf)
         
         phimedian = 10**(log10_phimedian)
         Mmedian_Msun = 10**(log10_Mmedian_Msun)
@@ -38,6 +39,7 @@ def CMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
 
         HMF = HMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta)
         result = HMF(log10_M_Msun) * (1/0.85) # On considère que la masse d'un amas de galaxies provient à 85% de la matière noire (le reste étant 10% de gaz ICM et 5% de galaxies)
+        
         return result
     
     return CMF_MRP_result
@@ -145,6 +147,9 @@ def CLF_log10_MRP(params,z): #params est un tableau de 4 paramètres : log10_Mme
         log10_L1Mpc = np.array(log10_L1Mpc)[np.newaxis,:] # Reshape L1Mpc to a row vector
         z_ = np.array(z)[:,np.newaxis]  # Reshape z to a column vector
 
+        L1Mpc = 10**(log10_L1Mpc) # We will need that quantity for the computation of the CLF using the CMF
+        RL = 0.69 * (L1Mpc**(1.32)) * (1+z_)**(2.91)  # Idem (from relation (3) de Gao et al. 2019)
+
         log10_M_Msun = 1.08 * (np.log10(0.69) + 1.32 * log10_L1Mpc + 2.91 * np.log10(1+z_)) - 1.37 
         # On injecte la relation (3) de Gao et al. 2019 dans la relation (17) de Wen et Han. 2015 : en réalité la formule est  (1.08 +/- 0.02) * np.log10(RL) - (1.37 +/- 0.02) → essayer de prendre en compte cette dispersion pour la suite 
         log10_M_Msun += 14  # On ajoute 14 pour avoir M en unité de M_sun
@@ -158,10 +163,9 @@ def CLF_log10_MRP(params,z): #params est un tableau de 4 paramètres : log10_Mme
 
         CMF = np.log(10) * phimedian * beta * ((M_Msun * (Mmedian_Msun)**(-1))**(alpha+1)) * np.exp(-((M_Msun * (Mmedian_Msun)**(-1))**(beta))) * (1/0.85) # * 1/0.85 car on considère que la DM représente 85% de la masse d'un cluster
         coeff_multipli_list = [1.08,1.08-0.02,1.08+0.02] # plusieurs coefficients pour prendre en compte la dispersion de la relation Richesse - M500 (voir Wen et Han 2015)
-        result = CMF * coeff_multipli_list[0] * (1.32*log10_L1Mpc) # calcul de dn/dL
-        result_min = CMF * coeff_multipli_list[1] * (1.32*log10_L1Mpc) # calcul de dn/dL
-        result_max = CMF * coeff_multipli_list[2] * (1.32*log10_L1Mpc) # calcul de dn/dL
-
+        result = CMF * coeff_multipli_list[0] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32-1))) * (np.log(10)*L1Mpc) # calcul de dn/dL
+        result_min = CMF * coeff_multipli_list[1] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32-1))) * (np.log(10)*L1Mpc)  # calcul de dn/dL
+        result_max = CMF * coeff_multipli_list[2] * (1/(np.log(10)*RL)) * ((0.69 * (1+z_)**2.91)*(1.32 * L1Mpc**(1.32-1))) * (np.log(10)*L1Mpc)  # calcul de dn/dL
         return [result,result_min,result_max]  
     return CLF_log10_MRP_result
 
