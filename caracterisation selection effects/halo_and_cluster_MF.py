@@ -20,7 +20,7 @@ def HMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
         # log10_M_Msun : log10(M/M_sun)
         log10_M_Msun = np.array(log10_M_Msun) # Assure que c'est un tableau numpy
         M_Msun = 10**(log10_M_Msun)
-        M_Msun = M_Msun * (1/0.435) # On passe de M500 à M200 (conversion approximative voir note Reza clus_nfw.pdf)
+        M_Msun = M_Msun #* (1/0.435) # On passe de M500 à M200 (conversion approximative voir note Reza clus_nfw.pdf) car la CMF MRP est calculée pour M200 (voir section 2.3.3 de Driver et al. 2021)
         
         phimedian = 10**(log10_phimedian)
         Mmedian_Msun = 10**(log10_Mmedian_Msun)
@@ -44,6 +44,43 @@ def CMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
     
     return CMF_MRP_result
 
+#----------------------------------------------------------------------------------------------------------------
+# Test pour ratio_M200_M500
+def HMF_MRP_test(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
+    # Halo Mass Function (HMF) de Murray, Robotham et Power (MRP)
+
+    # log10_Mmedian_Msun : log10(M_star/M_sun)
+    # log10_phimedian : log10(phi_star) → Mpc^-3 dex^-1
+    # alpha, beta : les 2 autres paramètres pour fitter
+
+    def HMF_MRP_result_test(log10_M_Msun,ratio_M200_M500) :
+        # log10_M_Msun : log10(M/M_sun)
+        log10_M_Msun = np.array(log10_M_Msun) # Assure que c'est un tableau numpy
+        M_Msun = 10**(log10_M_Msun)
+        M_Msun = M_Msun * (ratio_M200_M500) # On passe de M500 à M200 (conversion approximative : voir note Reza clus_nfw.pdf)
+        
+        phimedian = 10**(log10_phimedian)
+        Mmedian_Msun = 10**(log10_Mmedian_Msun)
+
+        result = np.log(10) * phimedian * beta * ((M_Msun * (Mmedian_Msun)**(-1))**(alpha+1)) * np.exp(-((M_Msun * (Mmedian_Msun)**(-1))**(beta)))
+        return result
+    
+    return HMF_MRP_result_test
+
+
+def CMF_MRP_test(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
+    # Cluster Mass Function tirée la HMF MRP (voir fonction HMF_MRP)
+
+    def CMF_MRP_result_test(log10_M_Msun,ratio_M200_M500) :
+        # log10_M_Msun : log10(M/M_sun)
+
+        HMF = HMF_MRP_test(log10_Mmedian_Msun,log10_phimedian,alpha,beta)
+        result = HMF(log10_M_Msun,ratio_M200_M500) * (1/0.85) # On considère que la masse d'un amas de galaxies provient à 85% de la matière noire (le reste étant 10% de gaz ICM et 5% de galaxies)
+        
+        return result
+    
+    return CMF_MRP_result_test
+#----------------------------------------------------------------------------------------------------------------
 
 
 
