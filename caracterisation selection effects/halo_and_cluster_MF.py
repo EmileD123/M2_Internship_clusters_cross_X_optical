@@ -1,14 +1,23 @@
 # On définit ici les fonctions de masse des halos de matière noire et des amas de galaxie
-
+import os
 import numpy as np
 import scipy
 from scipy.integrate import quad
 import math
 import matplotlib.pyplot as plt
 
+from astropy.cosmology import Planck18
+
+
+# Set colossus data directory before any colossus imports
+#os.environ['COLOSSUS_DATA_DIR'] = r'C:\Users\ED282972\AppData\Local\colossus'''
+# "COLOSSUS, a public, open-source python package for calculations related to cosmology, the large-scale structure (LSS) of matter in the universe, and the properties of dark matter halos." (Diemer 2018)
+from colossus.cosmology import cosmology
+from colossus.lss import mass_function
+
+
+#------------------------------------------------------------------------------------------------------------------
 # On commence par la fonction de masse des halos de matière noire (HMF) de Murray, Robotham et Power (MRP) - Murray, Robotham, Power 2013 / Murray et al. 2021
-
-
 def HMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
     # Halo Mass Function (HMF) de Murray, Robotham et Power (MRP)
 
@@ -44,7 +53,7 @@ def CMF_MRP(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
     
     return CMF_MRP_result
 
-#----------------------------------------------------------------------------------------------------------------
+#---------
 # Test pour ratio_M200_M500
 def HMF_MRP_test(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
     # Halo Mass Function (HMF) de Murray, Robotham et Power (MRP)
@@ -80,9 +89,7 @@ def CMF_MRP_test(log10_Mmedian_Msun,log10_phimedian,alpha,beta):
         return result
     
     return CMF_MRP_result_test
-#----------------------------------------------------------------------------------------------------------------
-
-
+#----------
 
 def CMF_MRP_2(log10_M_Msun): 
     # L'intérêt de cette fonction est de pouvoir optimiser la valeur de fonction de masse des amas pour une masse fixée et donc en fonction des paramètres fittés
@@ -239,10 +246,80 @@ def CLsunF_log10_MRP(params,z):
 
         return [result,result_min,result_max]  
     return CLsunF_log10_MRP_result
+#----------------------------------------------------------------------------------------------------------------
+# On définit ici la fonction de masse de halo foournie par Bocquet et al. 2016
+# A partir de maintenant on va saider du package COLOSSUS
 
-def hello_world():
-    print("Hello, world! version 5")
 
+def HMF_Bocquet_2016(M,z):
+    # Halo mass function
+    # M : range of masses in Msun
+    # z : redshift
+    cosmo_ = cosmology.setCosmology('planck18', persistence='') # persistence='' ralentit le processus mais empêche des problèmes d'accès à la mémoire cache du package colossus
+    result =  mass_function.massFunction(M, z, mdef = '500c', model = 'bocquet16', q_out = 'dndlnM') # dndlnM → return dn/dln(M)
+
+    return result
+
+def CMF_Bocquet_2016(M,z):
+    # Cluster mass function
+    # M : range of masses in Msun
+    # z : redshift
+    cosmo_ = cosmology.setCosmology('planck18', persistence='')
+    result =  mass_function.massFunction(M, z, mdef = '500c', model = 'bocquet16', q_out = 'dndlnM')* (1/0.85)  # On considère que la masse d'un amas de galaxies provient à 85% de la matière noire (le reste étant 10% de gaz ICM et 5% de galaxies)
+
+    return result
+
+def CLxF_eRASS_Bocquet_2016(Lx, z):
+    # Cluster X-ray luminosity function adapted for eRASS1 (Bulbul et al. 2024, Ghirardini et al. 2024) and using Bocquet et al. 2016 CMF
+    # Lx : range of luminosities in erg/s
+    # z : redshift
+    # Attention on considère un z fixe ici ! (Faire une surface en 3D pour la suite ?)
+
+    # On commence par calculer une APPROXIMATION de M500(CR(Lx)) avec CR le Count Rate de photons entre 0.2 et 2.3 kev (Lx correspond à la même bande)
+    # Lx → CR
+    cosmo = Planck18
+    alpha = 0.42 # alpha =/= 1 est légitime ? discussion Réza !
+    DLz = (cosmo.luminosity_distance(z) * (3.086 * 1e22)) # Distance lumineuse en m (attention c'est la même distance lumineuse pour chaque calcul dû au z fixe : grosse approximation !)
+    SeROSITA = 2451 * 1e-4 # Surface effective totale de collection des photons avec eROSITA en m^2 (calculé dans le notebook)
+    E_peak_kev = np.round(2.821 * 0.5740, 3) #localisation du pic dans le spectre du corps noir pour la température moyenne des amas dans eRASS1 (temp moyenne = 0.5470 kev + loi de déplacement de Wien)
+    E_peak = E_peak_kev * (1.6022 * 1e-9) # unit : erg
+
+    CR_from_LX = alpha * (Lx/E_peak) * (SeROSITA/(4*np.pi*(DLz)**2)) 
+
+    # CR → M500 (Ghirardini et al. 2024)
+        # Pivot values
+    zp = 0.35  # Redshift pivot
+    M500p = 2*(1e14) #Masse pivot - M_sun
+    CRp = 0.1 # Count rate pivot - cts/s
+
+    Ax = 0.64 ; Ax_min = Ax - 0.06 ; Ax_max = Ax + 0.04
+
+    Dx = -2 ; Ex = 2
+    Gx = 0.29 ; Gx_min = Gx - 0.13 ; Gx_max = Gx + 0.12
+    ex_z = Dx * np.log(cosmo.luminosity_distance(z)/cosmo.luminosity_distance(zp)) + Ex * np.log(cosmo.efunc(z)/cosmo.efunc(zp)) + Gx * np.log((1+z)/(1+zp))
+
+    Bx = 1.38 ; Bx_min = Bx - 0.04 ; Bx_max = Bx + 0.03
+    Fx = -0.33 ; Fx_min = Fx - 0.12 ; Fx_max = Fx + 0.12
+    bx_z = Bx + Fx * np.log((1+z)/(1+zp))
+
+    ln_M500 = np.log(M500p) + (1/bx_z) * (np.log(np.asarray(CR_from_LX/CRp)) - np.log(Ax) - ex_z) # np.asarray : transform quantitities inside into floats → avoid error with argument of log with a dimension
+    M500 = np.exp(ln_M500)  # M500 en M_sun
+    print('M500 = ', M500)
+
+    #Maintenant qu'on dispose d'une approximation de M500, on peut calculer notre ClxF en partant de la CMF de Bocquet 2016
+    dn_dlnM = CMF_Bocquet_2016(M500,z)
+
+    # On calcule les éléments différentiels dlnM_dlnCR et dlnCR_dlnLx
+    dlnM_dlnCR = bx_z
+
+    dlnCR_dlnLx = 1 # voir mail reza 09/08/2025
+
+    #On a notre résultal final !
+    dn_dlnLx = dn_dlnM * dlnM_dlnCR * dlnCR_dlnLx
+
+    return dn_dlnLx
+
+     
 
 
 

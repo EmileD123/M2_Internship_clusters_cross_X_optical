@@ -206,7 +206,7 @@ def L_star_L_sun_for_SCUSS(table):
 # Fonctions anciennement dans le notebook (faites par CURSOR)
 
 # Fonctions pour raccourcir le code
-def compute_histogram_density(data, bins=100, range=None, volume=1.0): #Attention : on ne ressort ici 
+def compute_histogram_density(data, bins=100, range=None, volume=1.0): 
     """
     Compute histogram, bin centers, bin width, and density for a given data array.
 
@@ -305,3 +305,78 @@ def add_apparent_luminosity(df, Labs_col, z_col, cosmo, new_col='Lapp'):
     return df
 
     #---------------------------------------------------------------------------------------------------
+# Fonctions associées à eRASS1 (Bulbul et al. 2024)
+
+def M500_from_Lx(Lx,z):
+    # Lx : range of luminosities in erg/s
+    # z : redshift
+    # Attention on considère un z fixe ici !
+    # On calcule une APPROXIMATION de M500(CR(Lx)) avec CR le Count Rate de photons entre 0.2 et 2.3 kev (Lx correspond à la même bande)
+
+    # CR from LX
+    cosmo = Planck18
+    alpha = 0.42
+    DLz = (cosmo.luminosity_distance(z) * (3.086 * 1e22)) # Distance lumineuse en m (attention c'est la même distance lumineuse pour chaque calcul dû au z fixe : grosse approximation !)
+    SeROSITA = 2451 * 1e-4 # Surface effective totale de collection des photons avec eROSITA en m^2 (calculé dans le notebook)
+    E_peak_kev = np.round(2.821 * 0.5740, 3) #localisation du pic dans le spectre du corps noir pour la température moyenne des amas dans eRASS1 (temp moyenne = 0.5470 kev + loi de déplacement de Wien)
+    E_peak = E_peak_kev * (1.6022 * 1e-9) # unit : erg
+
+    CR_from_LX = alpha * (Lx/E_peak) * (SeROSITA/(4*np.pi*(DLz)**2)) 
+
+    #M500 from CR (Ghirardini et al. 2024)
+        # Pivot values
+    zp = 0.35  # Redshift pivot
+    M500p = 2*(1e14) #Masse pivot - M_sun
+    CRp = 0.1 # Count rate pivot - cts/s
+
+    Ax = 0.64 ; Ax_min = Ax - 0.06 ; Ax_max = Ax + 0.04
+
+    Dx = -2 ; Ex = 2
+    Gx = 0.29 ; Gx_min = Gx - 0.13 ; Gx_max = Gx + 0.12
+    ex_z = Dx * np.log(cosmo.luminosity_distance(z)/cosmo.luminosity_distance(zp)) + Ex * np.log(cosmo.efunc(z)/cosmo.efunc(zp)) + Gx * np.log((1+z)/(1+zp))
+
+    Bx = 1.38 ; Bx_min = Bx - 0.04 ; Bx_max = Bx + 0.03
+    Fx = -0.33 ; Fx_min = Fx - 0.12 ; Fx_max = Fx + 0.12
+    bx_z = Bx + Fx * np.log((1+z)/(1+zp))
+
+    ln_M500 = np.log(M500p) + (1/bx_z) * (np.log(np.asarray(CR_from_LX/CRp)) - np.log(Ax) - ex_z) # np.asarray : transform quantitities inside into floats → avoid error with argument of log with a dimension
+    M500 = np.exp(ln_M500)  # M500 en M_sun
+
+    return M500
+
+
+
+# Scaling relation tirée de Maughan et al. 2018 
+
+def L_from_M_Maughan(M, z):
+    # section 2.3 Maughan et al. 2018
+    # M : Total mass of the cluster (M500 ?) : Msun
+    # z : redshift
+
+    # Valeurs : Table 5 Maughan et al. 2018
+    A_LM = 0.97 ; A_LM_minus = A_LM - 0.08 ; A_LM_max = A_LM + 0.08
+    B_LM = 1.64 ; B_LM_minus = B_LM - 0.09 ; B_LM_max = B_LM + 0.09
+
+    # Valeurs : For self-similar clusters in virial equilibrium :
+    #B_LM = 4/3
+    gamma_LM = 7/3
+
+    L_0 = 5*1e44 # erg/s
+    M_0 = 5*1e14 # M_sun
+    E_z = cosmo.efunc(z)  # E(z) = H(z)/H0
+
+    L = L_0 * A_LM * (E_z)**gamma_LM * (M/M_0)**B_LM
+
+    return L # L en erg/s
+
+def CR_from_LX(Lx, z):
+    # CR from LX
+    alpha = 1.0
+    DLz = (cosmo.luminosity_distance(z) * (3.086 * 1e22)) # Distance lumineuse en m (attention c'est la même distance lumineuse pour chaque calcul dû au z fixe : grosse approximation !)
+    SeROSITA = 2451 * 1e-4 # Surface effective totale de collection des photons avec eROSITA en m^2 (calculé dans le notebook)
+    E_peak_kev = np.round(2.821 * 0.5740, 3) #localisation du pic dans le spectre du corps noir pour la température moyenne des amas dans eRASS1 (temp moyenne = 0.5470 kev + loi de déplacement de Wien)
+    E_peak = E_peak_kev * (1.6022 * 1e-9) # unit : erg
+
+    CR_from_LX = alpha * (Lx/E_peak) * (SeROSITA/(4*np.pi*(np.asarray(DLz)**2))) 
+
+    return CR_from_LX
