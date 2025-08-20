@@ -371,7 +371,7 @@ def L_from_M_Maughan(M, z):
 
 def CR_from_LX(Lx, z):
     # CR from LX
-    alpha = 1.0
+    alpha = 1.0 #A modifier selon les bandes d'appartenance de CR et Lx
     DLz = (cosmo.luminosity_distance(z) * (3.086 * 1e22)) # Distance lumineuse en m (attention c'est la même distance lumineuse pour chaque calcul dû au z fixe : grosse approximation !)
     SeROSITA = 2451 * 1e-4 # Surface effective totale de collection des photons avec eROSITA en m^2 (calculé dans le notebook)
     E_peak_kev = np.round(2.821 * 0.5740, 3) #localisation du pic dans le spectre du corps noir pour la température moyenne des amas dans eRASS1 (temp moyenne = 0.5470 kev + loi de déplacement de Wien)

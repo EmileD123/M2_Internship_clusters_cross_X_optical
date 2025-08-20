@@ -239,7 +239,7 @@ plt.show()
 '''
 #---------------------
 # 2nd test : On utilise la relation ln(Lx) - ln(m500) fournie dans chiu et al. 2022 (eq 67)
-
+'''
 ln_Lx = np.log(Lx_scaled)
 
 def lnLx_from_lnM500_Chiu2022(M500, z):
@@ -267,7 +267,7 @@ print('len zeRASS1',np.shape(z_eRASS1))
 
 print(diff_lnLxscaled_lnLx[0])
 
-'''plt.figure(figsize=(8, 6))
+plt.figure(figsize=(8, 6))
 plt.scatter(np.arange(len(diff_lnLxscaled_lnLx[0])), diff_lnLxscaled_lnLx[0], label='lnLxscaled - ln_Lx', alpha=0.5)
 plt.axhline(y=0, color='red', label='0')
 plt.axhline(y=np.log(1.05), color='orange', label='ln(1.05)')
@@ -278,29 +278,30 @@ plt.legend()
 plt.title('ln_Lx_scaled to ln_Lx ratio')
 plt.show()'''
 
+
+
 #---------------------
 #3 eme test : On teste la relation L-M de Maughan et al. 2018
 
-# On calcule un première fois L_Maughan
+# On calcule une première fois L_Maughan et ratio_L_Maughan_Lx_02_23
 coeff = 1/2.57 # Pour passer de bolométrique à [0.2;2.3] kev (afin de pouvoir comparer à Lx de eRASS1)
-L_Maughan_ = uf.L_from_M_Maughan(M500_eRASS1,z_eRASS1) * coeff # 
-Lx_02_23_ = np.array(table_eRASS1['L500']*1e42) # Lx in erg/s : 0.2-2.3keV band
+L_Maughan_ = uf.L_from_M_Maughan(M500_eRASS1,z_eRASS1) * coeff 
+Lx_02_23_ = np.array(table_eRASS1['L500']*1e42) # Lx data de eRASS1 in erg/s : 0.2-2.3keV band
 ratio_L_Maughan_Lx_02_23_ = L_Maughan_/Lx_02_23_
 
 # On filtre les outliers
+table_eRASS1['L_Maughan'] = L_Maughan_
+table_eRASS1['Lx_02_23'] = Lx_02_23_
 table_eRASS1['ratio_L_Maughan_Lx_02_23'] = ratio_L_Maughan_Lx_02_23_
-table_eRASS1_filtered = table_eRASS1[table_eRASS1['ratio_L_Maughan_Lx_02_23'] < 100]
+table_eRASS1_filtered = table_eRASS1[table_eRASS1['ratio_L_Maughan_Lx_02_23'] < 2.5]
 
+# On récupère nos valeurs dans la table filtrée des outliers
 ratio_L_Maughan_Lx_02_23 = table_eRASS1_filtered['ratio_L_Maughan_Lx_02_23']
 M500_eRASS1 = np.array(table_eRASS1_filtered['M500']*1e13)  ; mean_M500_eRASS1 =  M500_eRASS1.mean()
 z_eRASS1 = np.array(table_eRASS1_filtered['zBest']) # redshift
-
-# On récupère nos valeurs 
-coeff = 1/2.57
-L_Maughan = uf.L_from_M_Maughan(M500_eRASS1,z_eRASS1) * coeff
-Lx_02_23 = np.array(table_eRASS1_filtered['L500']*1e42) # Lx in erg/s : 0.2-2.3keV band
-ratio_L_Maughan_Lx_02_23 = L_Maughan/Lx_02_23
-table_eRASS1_filtered['ratio_L_Maughan_Lx_02_23'] = ratio_L_Maughan_Lx_02_23
+L_Maughan = np.array(table_eRASS1_filtered['L_Maughan']) # L_Maughan in erg/s
+Lx_02_23 = np.array(table_eRASS1_filtered['Lx_02_23']) # Lx in erg/s : 0.2-2.3keV band
+KT_eRASS1 = np.array(table_eRASS1_filtered['KT']) # Température in keV
 print('mean ratio_L_Maughan_Lx_02_23 : ',np.mean(ratio_L_Maughan_Lx_02_23))
 print('std ratio_L_Maughan_Lx_02_23 : ',np.std(ratio_L_Maughan_Lx_02_23))
 
@@ -308,10 +309,15 @@ print('std ratio_L_Maughan_Lx_02_23 : ',np.std(ratio_L_Maughan_Lx_02_23))
 CR_02_23 = np.array(table_eRASS1_filtered['CR500']) # CR in counts/s
 CR_from_L_Maughan = uf.CR_from_LX(L_Maughan, z_eRASS1) # CR in counts/s
 ratio_CR_Maughan_CR_02_23 = CR_from_L_Maughan/CR_02_23 ; ratio_CR_Maughan_CR_02_23 = ratio_CR_Maughan_CR_02_23[ratio_CR_Maughan_CR_02_23<100]
-ratio_CR_outliers_0 = ratio_CR_Maughan_CR_02_23[ratio_CR_Maughan_CR_02_23 < 0.1]
+ratio_CR_outliers_0 = ratio_CR_Maughan_CR_02_23[ratio_CR_Maughan_CR_02_23 < 0.1] # éléments de ratio_CR_Maughan_CR_02_23 proche de 0
 print("Proportion de ratio d'éléments avec ratio CR Computed / CR Observed : ",(len(ratio_CR_outliers_0)/len(ratio_CR_Maughan_CR_02_23)))
+print('mean ratio_CR_Maughan_CR_02_23 : ',np.mean(ratio_CR_Maughan_CR_02_23))
+print('std ratio_CR_Maughan_CR_02_23 : ',np.std(ratio_CR_Maughan_CR_02_23))
+
+
 
 # Plot comparison between Lx_02_23 and L_Maughan
+#Bissectrice
 plt.figure(figsize=(8, 6))
 plt.scatter(Lx_02_23, L_Maughan, alpha=0.5, label='Data')
 plt.plot([Lx_02_23.min(), Lx_02_23.max()], [Lx_02_23.min(), Lx_02_23.max()], 'r--', label='y=x')
@@ -321,18 +327,21 @@ plt.title('Comparison of Lx_02_23 and L_Maughan')
 plt.legend()
 plt.tight_layout()
 
-'''
+#ratio L wrt Lx_02_23
 plt.figure(figsize=(8, 6))
-plt.scatter(np.arange(len(Lx_02_23)),Lx_02_23, alpha=0.5, label='Data eRASS1')
-plt.scatter(np.arange(len(Lx_02_23)),L_Maughan, alpha=0.5, label='Theory PICACS')
-plt.xlabel('indexes')
+plt.scatter(L_Maughan,ratio_L_Maughan_Lx_02_23, alpha=0.5, label='L_Maughan/Lx_02_23')
+plt.axhline(y=1, color='red')
+plt.axhline(y=1.05, color='orange')
+plt.axhline(y=0.95, color='green')
+plt.xlabel('L_Maughan (erg/s)')
 plt.ylabel('L (erg/s)')
 plt.title('Comparison of Lx between 0.2 and 2.3 kev and L_Maughan')
+plt.xscale('log')
+plt.grid()
 plt.legend()
 plt.tight_layout()
-'''
-print(len(ratio_L_Maughan_Lx_02_23))
 
+#ratio L wrt Lx_02_23
 plt.figure(figsize=(8, 6))
 plt.scatter(Lx_02_23,ratio_L_Maughan_Lx_02_23, alpha=0.5, label='L_Maughan/Lx_02_23')
 plt.axhline(y=1, color='red')
@@ -345,9 +354,38 @@ plt.xscale('log')
 plt.grid()
 plt.legend()
 plt.tight_layout()
+
+#ratio L wrt z_eRASS1
+plt.figure(figsize=(8, 6))
+plt.scatter(z_eRASS1, ratio_L_Maughan_Lx_02_23, alpha=0.5, label='L_Maughan/Lx_02_23')
+plt.axhline(y=1, color='red')
+plt.axhline(y=1.05, color='orange')
+plt.axhline(y=0.95, color='green')
+plt.xlabel('z_eRASS1')
+plt.ylabel('L (erg/s)')
+plt.title('Comparison of Lx between 0.2 and 2.3 kev and L_Maughan')
+plt.grid()
+plt.legend()
+plt.tight_layout()
+
+#ratio L wrt KT
+plt.figure(figsize=(8, 6))
+plt.scatter(KT_eRASS1, ratio_L_Maughan_Lx_02_23, alpha=0.5, label='L_Maughan/Lx_02_23')
+plt.axhline(y=1, color='red')
+plt.axhline(y=1.05, color='orange')
+plt.axhline(y=0.95, color='green')
+plt.xlabel('KT_eRASS1 (keV)')
+plt.ylabel('L (erg/s)')
+plt.title('Comparison of Lx between 0.2 and 2.3 kev and L_Maughan')
+plt.xscale('log')
+plt.grid()
+plt.legend()
+plt.tight_layout()
 plt.show()
 
+
 # Plot comparison between CR_02_23 and CR_from_L_Maughan
+#Bissectrice
 plt.figure(figsize=(8, 6))
 plt.scatter(CR_02_23, CR_from_L_Maughan, alpha=0.5, label='Data')
 plt.plot([CR_02_23.min(), CR_02_23.max()], [CR_02_23.min(), CR_02_23.max()], 'r--', label='y=x')
@@ -357,17 +395,58 @@ plt.title('Comparison of CR_02_23 and CR_from_L_Maughan')
 plt.legend()
 plt.tight_layout()
 
-plt.figure(figsize=(12, 8))
-plt.scatter(np.arange(len(ratio_CR_Maughan_CR_02_23)),ratio_CR_Maughan_CR_02_23, alpha=0.5, label='CR_Maughan/CR_02_23')
+#ratio CR wrt CR_from_L_Maughan
+plt.figure(figsize=(8, 6))
+plt.scatter(CR_from_L_Maughan,ratio_CR_Maughan_CR_02_23, alpha=0.5, label='CR_Maughan/CR_02_23')
 plt.axhline(y=1, color='red')
 plt.axhline(y=1.05, color='orange')
 plt.axhline(y=0.95, color='green')
-plt.xlabel('indexes')
+plt.xlabel('CR_from_L_Maughan (counts/s)')
 plt.ylabel('CR scaled / CR data (counts/s)')
+plt.title('Comparison of CR between 0.2 and 2.3 kev and CR_Maughan')
+plt.xscale('log')
+plt.grid()
+plt.legend()
+plt.tight_layout()
+
+#ratio CR wrt CR_02_23
+plt.figure(figsize=(8, 6))
+plt.scatter(CR_02_23,ratio_CR_Maughan_CR_02_23, alpha=0.5, label='CR_Maughan/CR_02_23')
+plt.axhline(y=1, color='red')
+plt.axhline(y=1.05, color='orange')
+plt.axhline(y=0.95, color='green')
+plt.xlabel('CR_02_23 (counts/s)')
+plt.ylabel('CR scaled / CR data (counts/s)')
+plt.title('Comparison of CR between 0.2 and 2.3 kev and CR_Maughan')
+plt.xscale('log')
+plt.grid()
+plt.legend()
+plt.tight_layout()
+
+#ratio CR wrt z_eRASS1
+plt.figure(figsize=(8, 6))
+plt.scatter(z_eRASS1, ratio_CR_Maughan_CR_02_23, alpha=0.5, label='CR_Maughan/CR_02_23')
+plt.axhline(y=1, color='red')
+plt.axhline(y=1.05, color='orange')
+plt.axhline(y=0.95, color='green')
+plt.xlabel('z_eRASS1')
+plt.ylabel('CR (counts/s)')
 plt.title('Comparison of CR between 0.2 and 2.3 kev and CR_Maughan')
 plt.grid()
 plt.legend()
 plt.tight_layout()
 
-plt.show()
+#ratio CR wrt KT
+plt.figure(figsize=(8, 6))
+plt.scatter(KT_eRASS1, ratio_CR_Maughan_CR_02_23, alpha=0.5, label='CR_Maughan/CR_02_23')
+plt.axhline(y=1, color='red')
+plt.axhline(y=1.05, color='orange')
+plt.axhline(y=0.95, color='green')
+plt.xlabel('KT_eRASS1 (keV)')
+plt.ylabel('CR (counts/s)')
+plt.title('Comparison of CR between 0.2 and 2.3 kev and CR_Maughan')
+plt.xscale('log')
+plt.grid()
+plt.legend()
 
+plt.show()
