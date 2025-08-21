@@ -369,6 +369,28 @@ def L_from_M_Maughan(M, z):
 
     return L # L en erg/s
 
+def L_from_M_Maughan_test_B_LM(M, z, B_LM):
+    # section 2.3 Maughan et al. 2018
+    # M : Total mass of the cluster (M500 ?) : Msun
+    # z : redshift
+    # B_LM : parameter of the L-M relation
+
+    # Valeurs : Table 5 Maughan et al. 2018
+    A_LM = 0.97 ; A_LM_minus = A_LM - 0.08 ; A_LM_max = A_LM + 0.08
+    #B_LM = 1.64 ; B_LM_minus = B_LM - 0.09 ; B_LM_max = B_LM + 0.09
+
+    # Valeurs : For self-similar clusters in virial equilibrium :
+    #B_LM = 4/3
+    gamma_LM = 7/3
+
+    L_0 = 5*1e44 # erg/s
+    M_0 = 5*1e14 # M_sun
+    E_z = cosmo.efunc(z)  # E(z) = H(z)/H0
+
+    L = L_0 * A_LM * (E_z)**gamma_LM * (M/M_0)**B_LM # en erg/
+
+    return L # L en erg/s
+
 def CR_from_LX(Lx, z):
     # CR from LX
     alpha = 1.0 #A modifier selon les bandes d'appartenance de CR et Lx

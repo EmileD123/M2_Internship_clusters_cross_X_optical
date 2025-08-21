@@ -327,7 +327,7 @@ plt.title('Comparison of Lx_02_23 and L_Maughan')
 plt.legend()
 plt.tight_layout()
 
-#ratio L wrt Lx_02_23
+'''#ratio L wrt Lx_02_23
 plt.figure(figsize=(8, 6))
 plt.scatter(L_Maughan,ratio_L_Maughan_Lx_02_23, alpha=0.5, label='L_Maughan/Lx_02_23')
 plt.axhline(y=1, color='red')
@@ -353,7 +353,7 @@ plt.title('Comparison of Lx between 0.2 and 2.3 kev and L_Maughan')
 plt.xscale('log')
 plt.grid()
 plt.legend()
-plt.tight_layout()
+plt.tight_layout()'''
 
 #ratio L wrt z_eRASS1
 plt.figure(figsize=(8, 6))
@@ -381,8 +381,24 @@ plt.xscale('log')
 plt.grid()
 plt.legend()
 plt.tight_layout()
-plt.show()
 
+
+#ratio L wrt M500
+plt.figure(figsize=(8, 6))
+sc = plt.scatter(M500_eRASS1, ratio_L_Maughan_Lx_02_23, c=z_eRASS1, cmap='viridis', alpha=0.5, label='L_Maughan/Lx_02_23')
+cbar = plt.colorbar(sc)
+cbar.set_label('z_eRASS1')
+plt.axhline(y=1, color='red')
+plt.axhline(y=1.05, color='orange')
+plt.axhline(y=0.95, color='green')
+plt.xlabel(r'M500 (M\odot)')
+plt.ylabel('L (erg/s)')
+plt.title('Comparison of Lx between 0.2 and 2.3 kev and L_Maughan')
+plt.xscale('log')
+plt.grid()
+plt.legend()
+plt.tight_layout()
+plt.show()
 
 # Plot comparison between CR_02_23 and CR_from_L_Maughan
 #Bissectrice
@@ -395,7 +411,7 @@ plt.title('Comparison of CR_02_23 and CR_from_L_Maughan')
 plt.legend()
 plt.tight_layout()
 
-#ratio CR wrt CR_from_L_Maughan
+'''#ratio CR wrt CR_from_L_Maughan
 plt.figure(figsize=(8, 6))
 plt.scatter(CR_from_L_Maughan,ratio_CR_Maughan_CR_02_23, alpha=0.5, label='CR_Maughan/CR_02_23')
 plt.axhline(y=1, color='red')
@@ -421,7 +437,7 @@ plt.title('Comparison of CR between 0.2 and 2.3 kev and CR_Maughan')
 plt.xscale('log')
 plt.grid()
 plt.legend()
-plt.tight_layout()
+plt.tight_layout()'''
 
 #ratio CR wrt z_eRASS1
 plt.figure(figsize=(8, 6))
@@ -448,5 +464,19 @@ plt.title('Comparison of CR between 0.2 and 2.3 kev and CR_Maughan')
 plt.xscale('log')
 plt.grid()
 plt.legend()
+
+#ratio CR wrt M500
+plt.figure(figsize=(8, 6))
+plt.scatter(M500_eRASS1, ratio_CR_Maughan_CR_02_23, alpha=0.5, label='CR_Maughan/CR_02_23')
+plt.axhline(y=1, color='red')
+plt.axhline(y=1.05, color='orange')
+plt.axhline(y=0.95, color='green')
+plt.xlabel(r'M500 (M\odot)')
+plt.ylabel('CR (counts/s)')
+plt.title('Comparison of CR between 0.2 and 2.3 kev and CR_Maughan')
+plt.xscale('log')
+plt.grid()
+plt.legend()
+plt.tight_layout()
 
 plt.show()
