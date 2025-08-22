@@ -284,8 +284,15 @@ plt.show()'''
 #3 eme test : On teste la relation L-M de Maughan et al. 2018
 
 # On calcule une première fois L_Maughan et ratio_L_Maughan_Lx_02_23
-coeff = 1/2.57 # Pour passer de bolométrique à [0.2;2.3] kev (afin de pouvoir comparer à Lx de eRASS1)
-L_Maughan_ = uf.L_from_M_Maughan(M500_eRASS1,z_eRASS1) * coeff 
+#coeff = 0.303 # Pour passer de bolométrique à [0.2;2.3] kev (afin de pouvoir comparer à Lx de eRASS1) ; 1/2.57 → ancienne valeur pour B_LM = 1.64 (tiré de Maughan et al. 2018)
+def coeff(z):
+    # Evolution linéaire de z à partir de l'optim sur bandes basses et bandes hautes de z
+    a = 0.093
+    b = 0.254
+    return a * z + b
+
+
+L_Maughan_ = uf.L_from_M_Maughan(M500_eRASS1,z_eRASS1) * coeff(z_eRASS1)
 Lx_02_23_ = np.array(table_eRASS1['L500']*1e42) # Lx data de eRASS1 in erg/s : 0.2-2.3keV band
 ratio_L_Maughan_Lx_02_23_ = L_Maughan_/Lx_02_23_
 
@@ -467,7 +474,9 @@ plt.legend()
 
 #ratio CR wrt M500
 plt.figure(figsize=(8, 6))
-plt.scatter(M500_eRASS1, ratio_CR_Maughan_CR_02_23, alpha=0.5, label='CR_Maughan/CR_02_23')
+sc = plt.scatter(M500_eRASS1, ratio_CR_Maughan_CR_02_23, c=z_eRASS1, cmap='viridis', alpha=0.5, label='CR_Maughan/CR_02_23')
+cbar = plt.colorbar(sc)
+cbar.set_label('z_eRASS1')
 plt.axhline(y=1, color='red')
 plt.axhline(y=1.05, color='orange')
 plt.axhline(y=0.95, color='green')

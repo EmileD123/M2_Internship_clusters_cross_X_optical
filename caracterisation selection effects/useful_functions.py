@@ -202,6 +202,21 @@ def L_star_L_sun_for_SCUSS(table):
 
     return result
 
+def split_dataframe_in_k_bins_z(df,name_z,k):
+    """
+    Split a DataFrame into k sub-DataFrames with increasing redshift (z),
+    each containing approximately the same number of elements.
+
+    df : dataframe to split
+    name_z : name of the redshift column (str)
+    k : number of bins (int)
+    """
+    df_sorted = df.sort_values(name_z)
+    n = len(df_sorted)
+    bins = np.linspace(0, n, k + 1).astype(int)
+    df_bins = [df_sorted.iloc[bins[i]:bins[i + 1]].copy() for i in range(k)]
+    return df_bins
+
 #----------------------------------------------------------------------------------------------------------------    
 # Fonctions anciennement dans le notebook (faites par CURSOR)
 
@@ -353,13 +368,18 @@ def L_from_M_Maughan(M, z):
     # M : Total mass of the cluster (M500 ?) : Msun
     # z : redshift
 
-    # Valeurs : Table 5 Maughan et al. 2018
+    # 1) Valeurs : Table 5 Maughan et al. 2018
     A_LM = 0.97 ; A_LM_minus = A_LM - 0.08 ; A_LM_max = A_LM + 0.08
-    B_LM = 1.64 ; B_LM_minus = B_LM - 0.09 ; B_LM_max = B_LM + 0.09
+    #B_LM = 1.64 ; B_LM_minus = B_LM - 0.09 ; B_LM_max = B_LM + 0.09
 
-    # Valeurs : For self-similar clusters in virial equilibrium :
+    # 2) Valeurs : For self-similar clusters in virial equilibrium :
     #B_LM = 4/3
     gamma_LM = 7/3
+
+    # 3) Valeurs issu de l'optim (voir test_optim_BLM.py):
+    #B_LM = 1.476
+    a = -0.495 ; b = 1.539
+    B_LM = a * z + b
 
     L_0 = 5*1e44 # erg/s
     M_0 = 5*1e14 # M_sun
