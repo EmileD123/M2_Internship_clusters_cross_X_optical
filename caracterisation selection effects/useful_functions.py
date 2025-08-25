@@ -322,7 +322,8 @@ def add_apparent_luminosity(df, Labs_col, z_col, cosmo, new_col='Lapp'):
     #---------------------------------------------------------------------------------------------------
 # Fonctions associées à eRASS1 (Bulbul et al. 2024)
 
-def M500_from_Lx(Lx,z):
+def M500_from_Lx_DEPRECATED(Lx,z):
+    #DEPRECATED
     # Lx : range of luminosities in erg/s
     # z : redshift
     # Attention on considère un z fixe ici !
@@ -410,6 +411,45 @@ def L_from_M_Maughan_test_B_LM(M, z, B_LM):
     L = L_0 * A_LM * (E_z)**gamma_LM * (M/M_0)**B_LM # en erg/
 
     return L # L en erg/s
+
+
+
+def M_from_Lx(Lx, z):
+    # section 2.3 Maughan et al. 2013
+    # Lx : Cluster Luminosity in erg/s, between 0.2 and 2.3 keV
+    # z : redshift
+
+    # On commence par passer de Lx (compris entre 0.2 et 2.3 kev) à L_Maughan (correspond à l'entièreté du rayonnement Bremsstrahlung)
+    a_coeff = 0.093 ; b_coeff = 0.254
+    coeff_Lx_L = (a_coeff * z + b_coeff) # → issu de l'optimisation (voir test_optim_BLM.py)
+
+    L_Maughan = Lx * (1/coeff_Lx_L)
+
+
+    # Ensuite on utilise la relation d'échelle de Maughan et al. 2013 pour passer de L_Maughan à M500
+    # 1) Valeurs : Table 5 Maughan et al. 2018
+    A_LM = 0.97 ; A_LM_minus = A_LM - 0.08 ; A_LM_max = A_LM + 0.08
+    #B_LM = 1.64 ; B_LM_minus = B_LM - 0.09 ; B_LM_max = B_LM + 0.09
+    
+
+    # 2) Valeurs : For self-similar clusters in virial equilibrium :
+    #B_LM = 4/3
+    gamma_LM = 7/3
+
+    # 3) Valeurs issu de l'optim (voir test_optim_BLM.py):
+    #B_LM = 1.476
+    a = -0.495 ; b = 1.539
+    B_LM = a * z + b
+
+
+    L_0 = 5*1e44 # erg/s
+    M_0 = 5*1e14 # M_sun
+    E_z = cosmo.efunc(z)  # E(z) = H(z)/H0
+
+    M = M_0 * ((L_Maughan/L_0) / (A_LM * (E_z)**gamma_LM))**(1/B_LM)
+
+    return M # M en M_sun
+
 
 def CR_from_LX(Lx, z):
     # CR from LX

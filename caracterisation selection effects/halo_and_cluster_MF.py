@@ -5,6 +5,7 @@ import scipy
 from scipy.integrate import quad
 import math
 import matplotlib.pyplot as plt
+import importlib
 
 from astropy.cosmology import Planck18
 
@@ -14,6 +15,9 @@ from astropy.cosmology import Planck18
 # "COLOSSUS, a public, open-source python package for calculations related to cosmology, the large-scale structure (LSS) of matter in the universe, and the properties of dark matter halos." (Diemer 2018)
 from colossus.cosmology import cosmology
 from colossus.lss import mass_function
+
+import useful_functions as uf ; importlib.reload(uf) 
+
 
 
 #------------------------------------------------------------------------------------------------------------------
@@ -261,15 +265,25 @@ def HMF_Bocquet_2016(M,z):
     return result
 
 def CMF_Bocquet_2016(M,z):
-    # Cluster mass function
+    # Cluster mass function 
     # M : range of masses in Msun
     # z : redshift
     cosmo_ = cosmology.setCosmology('planck18', persistence='')
     result =  mass_function.massFunction(M, z, mdef = '500c', model = 'bocquet16', q_out = 'dndlnM')* (1/0.85)  # On considère que la masse d'un amas de galaxies provient à 85% de la matière noire (le reste étant 10% de gaz ICM et 5% de galaxies)
 
-    return result
+    return result # (dn/dln(M))(M)
 
-def CLxF_eRASS_Bocquet_2016(Lx, z):
+def CMF_Bocquet_2016_log10(M,z):
+    # Cluster mass function 
+    # M : range of masses in Msun
+    # z : redshift
+    cosmo_ = cosmology.setCosmology('planck18', persistence='')
+    result =  mass_function.massFunction(M, z, mdef = '500c', model = 'bocquet16', q_out = 'dndlnM')* (1/0.85)  # On considère que la masse d'un amas de galaxies provient à 85% de la matière noire (le reste étant 10% de gaz ICM et 5% de galaxies)
+
+    return result * np.log(10) # (dn/dlog10(M))(M)
+ 
+def CLxF_eRASS_Bocquet_2016_DEPRECATED(Lx, z):
+    # DEPRECATED
     # Cluster X-ray luminosity function adapted for eRASS1 (Bulbul et al. 2024, Ghirardini et al. 2024) and using Bocquet et al. 2016 CMF
     # Lx : range of luminosities in erg/s
     # z : redshift
@@ -319,9 +333,28 @@ def CLxF_eRASS_Bocquet_2016(Lx, z):
 
     return dn_dlnLx
 
-     
 
+def CLxF_eRASS_Bocquet_2016(Lx , z):
+    # Cluster X-ray luminosity function adapted for eRASS1 (Maughan et al. 2013) and using Bocquet et al. 2016 CMF
+    # Lx : Cluster Luminosity in erg/s, between 0.2 and 2.3 keV
+    # z : redshift
 
+    # Renvoie (dn/dlog10(Lx))(Lx(M500))
+
+    # On commence par calculer (dn/dlog10(M500))(M500) isssu de Bocquet et al. 2016
+    M500 = uf.M_from_Lx(Lx,z) #→ utilise Maughan et al. 2013
+    dn_dlog10M500 = CMF_Bocquet_2016_log10(M500, z)
+
+    # On calcule l'élément différentiel
+    a = -0.495 ; b = 1.539
+    B_LM = a * z + b
+
+    dlog10M500_dlog10Lx = 1/B_LM
+
+    # On a notre résultat final :
+    dn_dlog10Lx = dn_dlog10M500 * dlog10M500_dlog10Lx
+
+    return dn_dlog10Lx
 
 
 
