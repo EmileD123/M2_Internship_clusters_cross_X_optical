@@ -159,7 +159,7 @@ def inverse_luminosity_distance(z_array):
     # Return a function that approximates the inverse of DL(z) on the range defined by z_array
     start = z_array[0] ; stop = z_array[1] ; num = z_array[2] 
     range_z = np.linspace(start, stop, num)
-    DL = cosmo.luminosity_distance(range_z).value * 1e6
+    DL = cosmo.luminosity_distance(range_z).value * 1e6 # Distance in parsecs !
     # Now, return a function that approximates the inverse of DL(z)
     # We'll use interpolation to create an approximate inverse function
     from scipy.interpolate import interp1d
@@ -169,6 +169,24 @@ def inverse_luminosity_distance(z_array):
     # Create the inverse function: given DL, return z
     inverse_func = interp1d(DL_sorted, z_sorted, kind = 'linear', bounds_error=False)
     return inverse_func
+
+def inverse_luminosity_distance_m(z_array):
+    # Same as inverse_luminosity_distance but uses distances in meters and not in parsecs
+    # z_array : [start,stop,num]
+    # Return a function that approximates the inverse of DL(z) on the range defined by z_array
+    start = z_array[0] ; stop = z_array[1] ; num = z_array[2] 
+    range_z = np.linspace(start, stop, num)
+    DL = cosmo.luminosity_distance(range_z).to('m').value
+    # Now, return a function that approximates the inverse of DL(z)
+    # We'll use interpolation to create an approximate inverse function
+    from scipy.interpolate import interp1d
+    # DL is strictly increasing with z, so we can invert it
+    DL_sorted = np.array(DL)
+    z_sorted = np.array(range_z)
+    # Create the inverse function: given DL, return z
+    inverse_func = interp1d(DL_sorted, z_sorted, kind = 'linear', bounds_error=False)
+    return inverse_func
+
 
 
 def inverse_luminosity_distance_old(Dl):
@@ -450,6 +468,41 @@ def M_from_Lx(Lx, z):
 
     return M # M en M_sun
 
+def Lx_from_M_Maughan(M, z):
+    # Fonction inverse de M_from_Lx
+    # section 2.3 Maughan et al. 2018
+    # M : Total mass of the cluster (M500 ?) : Msun
+    # z : redshift
+
+    # 1) Valeurs : Table 5 Maughan et al. 2018
+    A_LM = 0.97 ; A_LM_minus = A_LM - 0.08 ; A_LM_max = A_LM + 0.08
+    B_LM = 1.64 ; B_LM_minus = B_LM - 0.09 ; B_LM_max = B_LM + 0.09
+
+    # 2) Valeurs : For self-similar clusters in virial equilibrium :
+    #B_LM = 4/3
+    gamma_LM = 7/3
+
+    # 3) Valeurs issu de l'optim (voir test_optim_BLM.py):
+    #B_LM = 1.476
+    #a = -0.495 ; b = 1.539
+    #B_LM = a * z + b
+
+    L_0 = 5*1e44 # erg/s
+    M_0 = 5*1e14 # M_sun
+    E_z = cosmo.efunc(z)  # E(z) = H(z)/H0
+
+    L = L_0 * A_LM * ((E_z)**gamma_LM) * ((M/M_0)**B_LM)
+
+    #On ajoute le coeff pour passer dans la bande de 0.2-2.3 kev
+    #coeff_Lx_L = 1/3
+    a_coeff = 0.093 ; b_coeff = 0.254
+    coeff_Lx_L = (a_coeff * z + b_coeff) # → issu de l'optimisation (voir test_optim_BLM.py)
+    
+
+    Lx = L * coeff_Lx_L
+
+    return Lx # L en erg/s ; dans la bande 0.2-2.3 kev
+
 
 def CR_from_LX(Lx, z):
     # CR from LX
@@ -462,3 +515,13 @@ def CR_from_LX(Lx, z):
     CR_from_LX = alpha * (Lx/E_peak) * (SeROSITA/(4*np.pi*(np.asarray(DLz)**2))) 
 
     return CR_from_LX
+
+def CR_from_LX_faster(Lx, z):
+    # Vectorized version of CR_from_LX for faster computation
+    alpha = 1.0  # Adjust according to CR and Lx bands
+    DLz = cosmo.luminosity_distance(z).to('m').value  # Vectorized, in meters
+    SeROSITA = 2451e-4  # m^2
+    E_peak_kev = 2.821 * 0.5740  # No rounding needed for speed
+    E_peak = E_peak_kev * 1.6022e-9  # erg
+    CR = alpha * (np.asarray(Lx) / E_peak) * (SeROSITA / (4 * np.pi * DLz**2))
+    return CR
